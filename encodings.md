@@ -90,7 +90,7 @@ excommunicate :: Church a -> [a]
 excommunicate ch = runChurch ch (:) []
 ~~~~
 
-# The Basic Idea
+# A Less Basic Idea
 
 ~~~~ {.haskell}
 appendChurch :: Church a -> Church a -> Church a
@@ -100,9 +100,9 @@ appendChurch xs ys = Church $ \c n -> runChurch xs c $ runChurch ys c n
 ~~~~ {.haskell}
 appendChurch' :: Church a -> Church a -> Church a
 appendChurch' (Church fx) (Church fy) = Church $ \c -> fx c . fy c
-~~~~
 
-# The Basic Idea
+-- run one function composition per call to `appendChurch'`!
+~~~~
 
 ~~~~ {.haskell}
 (++) :: [a] -> [a] -> [a]
@@ -112,66 +112,35 @@ appendChurch' (Church fx) (Church fy) = Church $ \c -> fx c . fy c
 -- call `:` once per element of the first list, every time you call `++`!
 ~~~~
 
-~~~~ {.haskell}
-appendChurch' :: Church a -> Church a -> Church a
-appendChurch' (Church fx) (Church fy) = Church $ \c -> fx c . fy c
-
--- run one function composition per call to `appendChurch'`!
-~~~~
-
-# The Basic Idea
+# A Less Basic Idea
 
 Also applies to other practical problems.
 
-> 04:38:09          bkolera | It wouldn't be a big deal if
->                           | we didn't encode sum types as
->                           | sub types in scala, but ...
->                           | >_>
+> 04:38:09          bkolera | It wouldn't be a big deal if we didn't encode sum types as sub types in scala, but ... >_>
+>
 > 04:42:56          georgew | You could just Church encode?
-
-# Embedded Domain-Specific Languages
-
-Now that we've seen a simple example of what representing our data as
-functions might mean and how it might help us, let's think about a
-more general case.  One common approach to problem solving in
-functional programming is to define a small **domain-specific
-language** (DSL) in which to represent the problem or class of
-problems we're interested in attacking.  Calling a DSL **embedded**
-means that rather than have a separate parser, typechecker, etc. for
-our new language, we're going to just write regular programs with
-whatever language we like, but ideally make it look like and work like
-a language on its own.  EDSL programs are just regular programs.  We
-can then provide a way to run programs written in this so-called
-"object language" in our "meta language" (e.g. Haskell or OCaml, or
-some very general purpose language with a great type system and
-compiler to do the heavy lifting).  This approach can help decouple
-the problem domain from the engineering required to make it happen
-cleanly and efficiently on the computer.  Let's look at some common
-considerations when implementing a domain-specific language.
 
 # The Multiple Interpretations Problem
 
-A common design goal when implementing a DSL is that you'd like to be
-able to interpret the same program in different ways.  The obvious way
-is:
+Ways to interpret a program
 
   * Run the program and get its result
 
-But there are other ways, for example:
+# The Multiple Interpretations Problem
+
+Ways to interpret a program
+
+  * Run the program and get its result
 
   * Pretty-print or serialize the program
 
   * Perform optimizations before executing the program
 
-  * Run additional checks or pre-run tests (particularly if the
-    language allows side effects outside the type system).
+  * Run additional checks or pre-run tests
 
-  * Generate code, e.g. spit out C or Javascript so our program can
-    be run in restricted environments.
+  * Generate code
 
-  * Execute using alternative evaluation strategies, e.g. using the
-    LLVM JIT compilation tools to speed up execution or running the
-    program on a GPU.
+  * Execute using alternative evaluation strategies
 
 # The Expression Problem
 
@@ -183,44 +152,39 @@ But there are other ways, for example:
 
   -- Philip Wadler, Nov. 1998
 
-In other words, we'd like to be able to extend a DSL without having to
-modify its core.  This can allow users to extend the language
-themselves or to provide new features without breaking existing
-systems.
+# The Static Safety Problem
+
+What are the hard parts of implementing a language?
+
+ - parsers
+
+ - code generation
+
+ - type checkers
 
 # The Static Safety Problem
 
-A common design goal when implementing an embedded DSL is that we'd
-like to take advantage of our metalanguage's facilities where we can.
-In particular, if we're building a fairly simple language, it would be
-very convenient to be able to lean on the sophisticated type checker
-of the metalanguage at compile time.  A downside is that the error
-messages may be clearer to the implementer than the user, but the
-upside is that we can catch errors in the DSL at compile time with a
-lot less work than if we implemented our own type checker.  The same
-kinds of advantages can apply for debugging tools, code generation,
-etc.
+What are the hard parts of implementing a language?
+
+ - parsers
+
+ - code generation
+
+ - type checkers
+
+Let's reuse!
 
 # Solving All The Problems At Once
 
-I'm now going to introduce the technique from "Finally Tagless," which
-solves these problems quite nicely.  Later, we'll also discuss some
-other advantages and disadvantages to the different representations.
-We're going to start with some code that exhibits some of the problems
-and work our way towards the solution.  To begin, let's look at our
-data in the ordinary way.
+ * Simply typed lambda calculus: tags
+
+ * Simply typed lambda calculus: tagless
+
+ * Simply typed lambda calculus: the "Finally Tagless" approach
 
 # A Simple (But Powerful) DSL
 
-To illustrate how representing data differently can be applied to
-building DSLs, let's take the simply-typed lambda calculus, with
-integers as the base type, as a running example.  The STLC is a good
-example because it has first-class functions, so we'll make sure our
-results apply to higher-order languages.
-
-Unfortunately I must use de Bruijn indices, as I haven't figured out
-how to use higher-order abstract syntax with plain ADTs.  The later
-examples will involve less binding-related machinery.
+STLC, with de Bruijn indices
 
 ~~~~ {.haskell}
 -- Simply-typed lambda calculus terms
@@ -279,16 +243,12 @@ Failed, modules loaded: none.
 
 ~~~~ {.haskell}
 -- What type do we give this?  What's the return type?
+
 evalSTLC env (SVar v) = lkup v env
 evalSTLC env (SNum i) = i
 evalSTLC env (SApp f x) = (evalSTLC env f) (evalSTLC env x)
 evalSTLC env (SLam b) = \x -> evalSTLC (x : env) b
 ~~~~
-
-This can't work; the resulting expression might be either an `SLam` or
-an `SNum`.  We can't put both into our environment or return both!  So
-we have to introduce a "tag" to wrap the possible values and indicate
-which we're dealing with.
 
 # A Less Simple (But Still Powerful) DSL
 
@@ -316,8 +276,6 @@ instance Show Tag where
 testSTLC = SApp (SLam (SVar VZero)) (SNum 22)
 ~~~~
 
-This code typechecks and runs.
-
 ~~~~ {.haskell}
 > testSTLC
 SApp (SLam (SVar VZero)) (SNum 22)
@@ -326,11 +284,6 @@ SApp (SLam (SVar VZero)) (SNum 22)
 ~~~~
 
 # A Less Simple (But Still Powerful) DSL
-
-Sadly, we have to introduce this tag to get things to typecheck.  The
-interpreter is less clear and less direct.  In addition
-
- - We have some runtime overhead due to pattern-matching on the tag
 
  - The interpreter is partial!
 
@@ -341,23 +294,17 @@ failSTLC = SApp (SNum 22) (SNum 33)
 *** Exception: Can't apply the non-function '<22 :: Int>' to argument '<33 :: Int>'!
 ~~~~
 
-This term is nonsensical, but it compiled just fine.
+ - Code is more complicated
+
+ - We have some runtime overhead due to pattern-matching on the tag
 
 # A Less Simple (But Still Powerful) DSL
 
-This interpreter solves the Multiple Interpretations Problem.  We can
-take an `STLCTerm` and pass it around, manipulate it, optimize it,
-pretty-print it, etc.
+Multiple Interpretations        :)
 
-This interpreter does not solve the Expression Problem.  To extend the
-language, we have to open up this file, change the definition of
-`STLCTerm` and rewrite a bunch of code to match.  Our compiler should
-help highlight what we need to update, but it's still not
-satisfactory.
+Expression Problem              :(
 
-This interpreter does not solve the Static Safety Problem.  The
-language is extremely simple, but our implementation doesn't let us
-lean on Haskell's type checker.  We have to write our own.
+Static Safety                   :(
 
 # A Tagless Encoding
 
@@ -365,6 +312,8 @@ Let's tackle the Static Safety Problem by using Generalised Algebraic
 Data Types (GADTs).
 
 ~~~~ {.haskell}
+{-# LANGUAGE GADTs #-}
+
 data Term t where
   -- This quantified type could be a particular type like `Int`, but
   -- I'm using anything I can `show` just to make interactive
@@ -381,7 +330,7 @@ eval (App f x) = eval f (eval x)
 eval (Lam f) = eval . f . Var
 ~~~~
 
-Well, that was easy.  Let's try some test programs.
+Let's try some test programs.
 
 ~~~~ {.haskell}
 first = Lam $ \x -> Lam $ \y -> x
@@ -398,8 +347,6 @@ pairs = twice `App` first `App` (Const 33) `App` (Const 22)
 > :t pairs
 pairs :: (Num a, Show a) => Term a
 ~~~~
-
-I'm not sure it was worth computing, but it worked fine.
 
 # A Tagless Encoding
 
@@ -428,16 +375,7 @@ FinallyTagless.hs:210:1:
     Probable cause: the inferred type is ambiguous
 ~~~~
 
-It looks like we've licked the static safety problem!
-
-This interpreter also solves the Multiple Interpretations Problem
-(just write any function that pattern-matches on the constructors of
-`Term`).
-
 # A Tagless Encoding
-
-Unfortunately, this GADT-based interpreter is the same as the previous
-interpreter with respect to the Expression Problem.
 
 ~~~~ {.haskell}
 
@@ -463,12 +401,13 @@ evalY (Y f) = y' $ evalY f
 twiceY = LamY $ \f -> LamY $ \x -> LamY $ \y -> f `AppY` (f `AppY` x `AppY` y) `AppY` y
 ~~~~
 
-Ugh, we've got to rewrite everything!  Management is disappointed.
+# A Tagless Encoding
 
-At this point, I hope it's clear that to solve the Expression Problem,
-we can't simply use ordinary data types with constructors directly.
-We'll never be able to extend them in a separate module.  Let's try a
-different approach, motivated by our earlier look at Church encoding.
+Multiple Interpretations        :)
+
+Expression Problem              :(
+
+Static Safety                   :)
 
 # A Final Encoding
 
@@ -484,12 +423,6 @@ app (Eval f) (Eval x) = Eval $ f x
 lam :: (Eval a -> Eval b) -> Eval (a -> b)
 lam b = Eval $ \x -> eval (b (Eval x))
 ~~~~
-
-We can do a similar trick to the Church encoding of lists and
-represent our data constructors as functions.  This is **not** a
-Church encoding; it's called a **final encoding** for reasons unknown
-to me.  The version using explicit constructors is called an **initial
-encoding**.
 
 ~~~~ {.haskell}
 -- first = Lam $ \x -> Lam $ \y -> x
@@ -508,9 +441,6 @@ pairs :: (Num a, Show a) => Eval a
 33
 ~~~~
 
-The new encoding works, and it's quite similar to the original!  Let's
-see how we do on the various problems.
-
 # A Final Encoding
 
 ~~~~ {.haskell}
@@ -527,12 +457,7 @@ FinallyTagless.hs:72:5:
                  Eval a
 ~~~~
 
-Lovely!  This final encoding solves the Static Safety Problem.
-
 # A Final Encoding
-
-Now we can extend our object language in a different module, without
-touching the original.
 
 ~~~~ {.haskell}
 import Final.hs (Eval(..), lam, app, var)
@@ -545,32 +470,20 @@ y (Eval f) = Eval (y' f)
 twentytwo = y $ lam $ \x -> const (var 22) x
 ~~~~
 
-Let's try it out:
-
 ~~~~ {.haskell}
 > eval $ twentytwo
 22
 ~~~~
 
-Hooray!  This interpreter solves the Expression Problem!  Management
-is satisfied!  But . . .
-
 # A Final Encoding
 
-How do we solve the Multiple Interpretations Problem?  There's nothing
-we can change about the way we interpret our code.  Optimization is
-right out!  This leaves our users unhappy again.
+Multiple Interpretations        :(
 
-We solved the Expression Problem by representing our data as
-functions, but now we want our functions to have different meanings.
-Can you think of a way to give functions different meanings, depending
-on some context?  Depending on the type?
+Expression Problem              :)
+
+Static Safety                   :)
 
 # The Finally Tagless Solution
-
-The answer, in Haskell, is to use type classes.  (In OCaml, you can do
-the same thing with a module.)  This type class defines the lambda
-calculus language:
 
 ~~~~ {.haskell}
 class FinalTerm repr where
@@ -606,10 +519,9 @@ pairs :: (Num a, Show a, FinalTerm repr) => repr a
 33
 ~~~~
 
-
 # The Finally Tagless Solution
 
-We can also make a second interpreter: a pretty-printer!
+Let's make a second interpreter.
 
 ~~~~ {.haskell}
 -- This is just machinery for generating variable names
@@ -634,19 +546,12 @@ pretty :: Pretty a -> String
 pretty expr = unPretty expr varnames
 ~~~~
 
-Let's run the test program through it:
-
 ~~~~ {.haskell}
 > pretty' pairs
 "(((lambda x. (lambda y. (lambda z. ((x ((x y) z)) z)))) (lambda x. (lambda y. x)) 33) 22)"
 ~~~~
 
 # The Finally Tagless Solution
-
-We've already shown that we can solve the Multiple Interpretations
-Problem, and the Static Safety Problem is solved just as with
-functions.  Now let's see how this approach addresses the Expression
-Problem.
 
 ~~~~ {.haskell}
 import FinallyTagless.hs (FinalTerm(..), Eval(..), Pretty(..), pretty)
@@ -665,8 +570,6 @@ instance FinalTermY Pretty where
 
 ~~~~
 
-This is not an insubstantial addition.
-
 ~~~~ {.haskell}
 twentytwo = y $ lam $ \x -> const (var 22) x
 
@@ -677,19 +580,7 @@ twentytwo = y $ lam $ \x -> const (var 22) x
 "(fixpoint of (lambda x. 22) with respect to 'x')"
 ~~~~
 
-You may have noticed that in these cases, type inference also works
-perfectly fine, and we haven't used anything outside Haskell 98.
-
 # Equivalence Of Final and Initial Encodings
-
-We can convert back and forth between encodings to show that they are
-equivalent.  There is a catch, though; if we used our old initial
-encoding (the `Term` GADT), we'd have to commit to a particular final
-interpretation, e.g. `Eval` or `Pretty`.  Instead, I've defined this
-new initial encoding containing the `HCell` constructor.  This
-constructor lets us work with terms that have already been "finally
-encoded" in our initial representation.  It doesn't show up in any
-programs, but it's necessary to write `evalH`.
 
 ~~~~ {.haskell}
 data HTerm h t where
@@ -719,17 +610,15 @@ convert (HApp f x) = app (convert f) (convert x)
 convert (HLam b) = lam $ convert . b . HCell
 ~~~~
 
-Notice that when you convert to or from a particular initial encoding,
-your language becomes 'closed' again.  The initial encoding for the
-language and the conversion code above would have to be modified if we
-wanted to convert terms using the Y combinator.
+# The Finally Tagless Approach
+
+Multiple Interpretations        :)
+
+Expression Problem              :)
+
+Static Safety                   :)
 
 # Drawbacks
-
-The Finally Tagless approach to EDSL implementation solves the Static
-Safety Problem, the Multiple Interpreters Problem and the Expression
-Problem all at once.  Management is happy; users are happy; we're
-happy.  Is it the end of the talk?
 
 There are some disadvantages . . .
 
@@ -748,55 +637,15 @@ FinallyTagless.hs:402:42:
     In the expression: pretty' t
 ~~~~
 
-What is this about?!  Couldn't match `Pretty a0` with `Eval t`?
+> polymorphism in Haskell is not first-class -- Oleg
 
-This problem occurs with any function that produces or accepts a
-finally-encoded program; Oleg describes this by saying that
-"polymorphism in Haskell is not first-class" -- when we pattern-match
-on the program, we constrain it to a single type.  Alas!
-
-We can use this `Program` wrapper if we want to output a program in
-our object language.  This achieves the goal of allowing multiple
-interpretations, but at a price: the representation is now closed,
-since we had to explicitly list what parts of the language we want to
-quantify over.  In this example, we have excluded the fixpoint
-combinator from the language!
-
-In addition, wrapping up object language programs with a `forall` also
-causes issues for the isomorphism function above (I think); I can't
-work out how to write a function that takes an `HTerm repr t` and
-converts it to a `Program t`.  We need the `repr` argument to `HTerm`
-to be quantified the same way as the one hidden inside the `Program`.
+When we pattern-match on the program, we constrain it to a single
+type.  Alas!
 
 # Drawbacks
 
-~~~~ {.haskell}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ImpredicativeTypes #-}
-
-newtype Program a = Program {
-  getProgram :: forall repr. FinalTerm repr => repr a
-  }
-
-convert' :: HTerm (forall repr. FinalTerm repr => repr :: * -> *) t
-         -> (forall repr. FinalTerm repr => repr t)
-convert' (HVar x) = var x
-convert' (HCell x) = x
-convert' (HApp f x) = app (convert' f) (convert' x)
-convert' (HLam b) = lam $ convert' . b . HCell
-~~~~
-
-If we used the ImpredicativeTypes extension, which lets us write
-things like this, we could solve the problem.  Sadly, GHC would no
-longer be able to infer types for such values.  That's a heavy price
-to pay!
-
-# Drawbacks
-
-Remember, the only thing we can do with a finally-encoded term is to
-interpret it.  So if we want to use it for multiple things, can we
-make an interpreter that provides multiple instances of the program?
-This is indeed Oleg's solution to the problem.
+The only thing we can do with a finally-encoded term is to interpret
+it.
 
 ~~~~ {.haskell}
 newtype Pair repr repr' t = Pair { unPair :: (repr t, repr' t) }
@@ -810,9 +659,6 @@ instance (FinalTerm repr, FinalTerm repr') => FinalTerm (Pair repr repr') where
                 lam $ \z -> snd . unPair . b $ Pair (undefined, z))
 ~~~~
 
-Equipped with this somewhat clunky tool, we can now build
-`runAndPrettyPrint`.
-
 ~~~~ {.haskell}
 runAndPrettyPrint prog = (eval' $ l prog, pretty' $ r prog)
   where
@@ -820,60 +666,25 @@ runAndPrettyPrint prog = (eval' $ l prog, pretty' $ r prog)
     r = snd . unPair
 ~~~~
 
-We're still in Haskell 98 land, and type inference still works
-properly!
-
-# Other Drawbacks
-
-The "Finally Tagless" paper shows how to apply the approach to various
-other useful tasks, like deserialization of the program (which
-includes type-checking), performing optimizations by transforming the
-AST, type-directed partial evaluation, and more.  Those things are
-possible (and TDPE is pretty neat), but frankly, it would be a slog to
-just show how most of them work (I have backup slides if you're
-interested).  For the sake of time and not just blasting more code on
-the screen, I'm going to summarize the tradeoffs as I understand them
-here.
-
 # Initial Advantages
 
 Here are some advantages of the ADT method, also known as the
 "initial" encoding of the language:
 
-* We can pattern-match on the ADT, which makes transforming the
-  representation of the embedded program straightforward to understand
-  (e.g. if we want to do some optimizations).  It's also amenable to
-  existing generic programming tools like 'uniplate' or 'syb'.
+ * Pattern-matching
 
-* Defining a "tagless" ADT usually requires additional type system
-  features, e.g. GADTs, but once the ADT is defined and we accept that
-  we need an enhanced type system, object language programs are
-  automatically first-class without any additional machinery.  (We
-  don't need the weird "duplicating interpreter".)
+ * No extra machinery once we accept the need for language extensions
 
-* If you want to make your initially-encoded language no longer
-  embedded directly in the meta language (e.g. moving to a
-  dependently-typed language, with a separate type checker), the
-  extension is fairly natural.  I haven't seen or come up with any
-  clean ways of doing this for finally-encoded ones.
+ * Naturally extends to type systems that can't be embedded
 
 # Final Advantages
 
 Here are some advantages of the typeclass method, also known as the
 "final" encoding of the language:
 
- * Our language is extensible and open; we can add new features to its
-   abstract syntax while reusing, without modifying (or even
-   recompiling!) the code for the core language.  GHC can infer the
-   object program types at the use site.  It's possible to solve the
-   Expression Problem.
+ * Solves the Expression Problem in Haskell 98
 
- * With some usage patterns, especially the typical "monadic
-   substitution" pattern that happens when language fragments are
-   composed together, a final encoding (with or without type classes)
-   can actually yield an asymptotic speedup in creating the program.
-
- * It is possible to solve the Static Safety Problem in Haskell 98.
+ * Function composition for substituting expressions
 
 # Other Notes
 
@@ -1037,6 +848,29 @@ scons x xs = SL $ \c n -> c x xs
 smap :: forall a b. (a -> b) -> SList a -> SList b
 smap f lst = elim lst (\x xs -> f x `scons` smap f xs) snil
 ~~~~
+
+# Drawbacks
+
+~~~~ {.haskell}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+
+newtype Program a = Program {
+  getProgram :: forall repr. FinalTerm repr => repr a
+  }
+
+convert' :: HTerm (forall repr. FinalTerm repr => repr :: * -> *) t
+         -> (forall repr. FinalTerm repr => repr t)
+convert' (HVar x) = var x
+convert' (HCell x) = x
+convert' (HApp f x) = app (convert' f) (convert' x)
+convert' (HLam b) = lam $ convert' . b . HCell
+~~~~
+
+If we used the ImpredicativeTypes extension, which lets us write
+things like this, we could solve the problem.  Sadly, GHC would no
+longer be able to infer types for such values.  That's a heavy price
+to pay!
 
 # Codensity Transformation
 
