@@ -346,7 +346,7 @@ testSTLC <span class="fu">=</span> <span class="dt">SApp</span> (<span class="dt
 <thead>
 <tr class="header">
 <th align="right">Property</th>
-<th align="left">Solution</th>
+<th align="left">ADTs</th>
 </tr>
 </thead>
 <tbody>
@@ -448,20 +448,24 @@ twiceY <span class="fu">=</span> <span class="dt">LamY</span> <span class="fu">$
 <thead>
 <tr class="header">
 <th align="right">Property</th>
-<th align="left">Solution</th>
+<th align="left">ADTs</th>
+<th align="left">GADTs</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="right">Multiple Interpretations</td>
 <td align="left">:)</td>
+<td align="left">:)</td>
 </tr>
 <tr class="even">
 <td align="right">Expression Problem</td>
 <td align="left">:(</td>
+<td align="left">:(</td>
 </tr>
 <tr class="odd">
 <td align="right">Static Safety</td>
+<td align="left">:(</td>
 <td align="left">:)</td>
 </tr>
 </tbody>
@@ -527,20 +531,28 @@ twentytwo <span class="fu">=</span> y <span class="fu">$</span> lam <span class=
 <thead>
 <tr class="header">
 <th align="right">Property</th>
-<th align="left">Solution</th>
+<th align="left">ADTs</th>
+<th align="left">GADTs</th>
+<th align="left">Functions</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="right">Multiple Interpretations</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
 <td align="left">:(</td>
 </tr>
 <tr class="even">
 <td align="right">Expression Problem</td>
+<td align="left">:(</td>
+<td align="left">:(</td>
 <td align="left">:)</td>
 </tr>
 <tr class="odd">
 <td align="right">Static Safety</td>
+<td align="left">:(</td>
+<td align="left">:)</td>
 <td align="left">:)</td>
 </tr>
 </tbody>
@@ -627,20 +639,32 @@ pretty expr <span class="fu">=</span> unPretty expr varnames</code></pre></div>
 <thead>
 <tr class="header">
 <th align="right">Property</th>
-<th align="left">Solution</th>
+<th align="left">ADTs</th>
+<th align="left">GADTs</th>
+<th align="left">Functions</th>
+<th align="left">Type Classes</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="right">Multiple Interpretations</td>
 <td align="left">:)</td>
+<td align="left">:)</td>
+<td align="left">:(</td>
+<td align="left">:)</td>
 </tr>
 <tr class="even">
 <td align="right">Expression Problem</td>
+<td align="left">:(</td>
+<td align="left">:(</td>
+<td align="left">:)</td>
 <td align="left">:)</td>
 </tr>
 <tr class="odd">
 <td align="right">Static Safety</td>
+<td align="left">:(</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
 <td align="left">:)</td>
 </tr>
 </tbody>
@@ -708,20 +732,29 @@ runAndPrettyPrint prog <span class="fu">=</span> (eval prog, pretty prog)</code>
 <thead>
 <tr class="header">
 <th align="right">Property</th>
-<th align="left">Solution</th>
+<th align="left">Type Classes</th>
+<th align="left">RankNTypes</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="right">Multiple Interpretations</td>
 <td align="left">:)</td>
+<td align="left">:)</td>
 </tr>
 <tr class="even">
 <td align="right">Expression Problem</td>
+<td align="left">:)</td>
 <td align="left">:(</td>
 </tr>
 <tr class="odd">
 <td align="right">Static Safety</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
+</tr>
+<tr class="even">
+<td align="right">Simultaneous interpretations</td>
+<td align="left">:(</td>
 <td align="left">:)</td>
 </tr>
 </tbody>
@@ -743,6 +776,42 @@ runAndPrettyPrint prog <span class="fu">=</span> (eval prog, pretty prog)</code>
   <span class="kw">where</span>
     l <span class="fu">=</span> fst <span class="fu">.</span> unPair
     r <span class="fu">=</span> snd <span class="fu">.</span> unPair</code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Property</th>
+<th align="left">Type Classes</th>
+<th align="left">RankNTypes</th>
+<th align="left">Pair instance</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">Multiple Interpretations</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
+</tr>
+<tr class="even">
+<td align="right">Expression Problem</td>
+<td align="left">:)</td>
+<td align="left">:(</td>
+<td align="left">:)</td>
+</tr>
+<tr class="odd">
+<td align="right">Static Safety</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
+</tr>
+<tr class="even">
+<td align="right">Simultaneous interpretations</td>
+<td align="left">:(</td>
+<td align="left">:)</td>
+<td align="left">:)</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="initial-advantages" class="slide section level1">
 <h1>Initial Advantages</h1>
