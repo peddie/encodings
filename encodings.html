@@ -916,19 +916,5 @@ convert&#39; (<span class="dt">HApp</span> f x) <span class="fu">=</span> app (c
 convert&#39; (<span class="dt">HLam</span> b) <span class="fu">=</span> lam <span class="fu">$</span> convert&#39; <span class="fu">.</span> b <span class="fu">.</span> <span class="dt">HCell</span></code></pre></div>
 <p>If we used the ImpredicativeTypes extension, which lets us write things like this, we could solve the problem. Sadly, GHC would no longer be able to infer types for such values. That's a heavy price to pay!</p>
 </div>
-<div id="codensity-transformation" class="slide section level1">
-<h1>Codensity Transformation</h1>
-<p>See &quot;Asymptotic Improvement of Computations Over Free Monads&quot; and &quot;Free Monads For Less&quot;.</p>
-<p>http://www.iai.uni-bonn.de/~jv/mpc08.pdf</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">
-
-<span class="kw">newtype</span> <span class="dt">Codensity</span> f a <span class="fu">=</span> <span class="dt">Codensity</span> (forall r<span class="fu">.</span> (a <span class="ot">-&gt;</span> f r) <span class="ot">-&gt;</span> f r)</code></pre></div>
-</div>
-<div id="optimization-example" class="slide section level1">
-<h1>Optimization example?</h1>
-</div>
-<div id="tdpe" class="slide section level1">
-<h1>TDPE?</h1>
-</div>
 </body>
 </html>
