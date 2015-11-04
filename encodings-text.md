@@ -1084,8 +1084,6 @@ toHOAS :: WrapHOAS repr () a -> repr a
 toHOAS expr = unwrapHOAS expr ()
 ~~~~
 
-# Church Encodings
-
 # Scott Encodings
 
 ~~~~ {.haskell}
@@ -1101,9 +1099,3 @@ scons x xs = SL $ \c n -> c x xs
 smap :: forall a b. (a -> b) -> SList a -> SList b
 smap f lst = elim lst (\x xs -> f x `scons` smap f xs) snil
 ~~~~
-
-# Codensity Transformation
-
-# Optimization example?
-
-# TDPE?
