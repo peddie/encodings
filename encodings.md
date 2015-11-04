@@ -14,10 +14,26 @@ Consider the humble linked list.
 ~~~~ {.haskell}
 data List a = Nil
             | Cons a (List a)
+
+-- data [a] = [] | a : [a]
 ~~~~
 
  - Start at the head
  - Do something on each element in order
+
+# The Basic Idea
+
+~~~~ {.haskell}
+(++) :: [a] -> [a] -> [a]
+[]     ++ bs = bs
+(a:as) ++ bs = a : (as ++ bs)
+
+-- call `:` once per element of the first list, every time you call `++`!
+~~~~
+
+~~~~ {.haskell}
+a ++ b ++ c         -- traverses `a` twice, `b` once
+~~~~
 
 # The Basic Idea
 
@@ -28,13 +44,13 @@ newtype DList = DList { runDList :: [a] -> [a] }
 ~~~~
 
 ~~~~ {.haskell}
-fromDList :: [a] -> DList a
-fromDList lst = DList (++ lst)
+toDList :: [a] -> DList a
+toDList lst = DList (lst ++)
 ~~~~
 
 ~~~~ {.haskell}
-toDList :: DList a -> [a]
-toDList (DList f) = f []
+fromDList :: DList a -> [a]
+fromDList (DList f) = f []
 ~~~~
 
 ~~~~ {.haskell}
@@ -47,20 +63,34 @@ cons x (DList xs) = DList $ (x :) . xs
 # The Basic Idea
 
 ~~~~ {.haskell}
-(++) :: [a] -> [a] -> [a]
-[]     ++ bs = bs
-(a:as) ++ bs = a : (as ++ bs)
-
--- call `:` once per element of the first list, every time you call `++`!
-~~~~
-
-~~~~ {.haskell}
 appendDList :: DList a -> DList a -> DList a
 appendDList (DList xs) (DList ys) = DList $ xs . ys
-
 -- appendDList (DList xs) (DList ys) = DList $ \g -> xs (ys g)
 
 -- call (.) once per call to `appendDList`!
+~~~~
+
+~~~~ {.haskell}
+(++) :: [a] -> [a] -> [a]
+[]     ++ bs = bs
+(a:as) ++ bs = a : (as ++ bs)
+~~~~
+
+~~~~ {.haskell}
+-- convert a series of appends back to an ordinary list
+
+(as, bs, cs) = (toDList a, toDList b, toDList c)
+
+as `appendDList` bs `appendDList` cs      -- expand appendDList (associativity doesn't matter)
+DList $ as . bs . cs                      -- rewrite each DList in terms of `toDList`
+DList $ (a ++) . (b ++) . (c ++)          -- run `fromDList`
+(a ++) . (b ++) . (c ++) $ []             -- apply first function
+(a ++) . (b ++) $ c ++ []                 -- traverse `c` once when evaluating `++`
+(a ++) . (b ++) $ c                       -- apply second function
+(a ++) $ (b ++ c)                         -- traverse `b` once when evaluating `++`
+(a ++) $ bc                               -- apply third function
+a ++ bc                                   -- traverse `a` once when evaluating `++`
+abc                                       -- concrete list in O(length abc)
 ~~~~
 
 # A Less Basic Idea
@@ -70,55 +100,77 @@ appendDList (DList xs) (DList ys) = DList $ xs . ys
 
 newtype Church a = Church {
   runChurch :: forall r. (a -> r -> r)    -> r   -> r
-               --          cons           nil    result
+               --          cons              nil    result
   }
-~~~~
 
-~~~~ {.haskell}
 convert :: [a] -> Church a
 convert lst = Church $ \c n -> foldr c n lst
-~~~~
 
-~~~~ {.haskell}
-foldr :: Foldable t => (a -> b -> b) -> b -> t a ->
-c :: a -> r -> r  -- the folding function
-n :: r            -- the terminating value
-~~~~
-
-~~~~ {.haskell}
 excommunicate :: Church a -> [a]
-excommunicate ch = runChurch ch (:) []
-~~~~
+excommunicate (Church ch) = ch (:) []
 
-# A Less Basic Idea
+cons :: a -> Church a -> Church a
+cons x (Church ch) = Church $ \c -> c x . ch c
+-- cons x (Church ch) = Church $ \c n -> c x (ch c n)
 
-~~~~ {.haskell}
 appendChurch :: Church a -> Church a -> Church a
-appendChurch xs ys = Church $ \c n -> runChurch xs c $ runChurch ys c n
-~~~~
-
-~~~~ {.haskell}
-appendChurch' :: Church a -> Church a -> Church a
-appendChurch' (Church fx) (Church fy) = Church $ \c -> fx c . fy c
+appendChurch (Church fx) (Church fy) = Church $ \c -> fx c . fy c
+-- appendChurch xs ys = Church $ \c n -> runChurch xs c $ runChurch ys c n
 
 -- run one function composition per call to `appendChurch'`!
 ~~~~
 
 ~~~~ {.haskell}
-(++) :: [a] -> [a] -> [a]
-[]     ++ bs = bs
-(a:as) ++ bs = a : (as ++ bs)
-
--- call `:` once per element of the first list, every time you call `++`!
+foldr :: Foldable t => (a -> b -> b) -> b -> t a -> b
+                   c :: a -> r -> r           -- the folding function
+                                   n :: r     -- the terminating value
 ~~~~
 
 # A Less Basic Idea
 
-Also applies to other practical problems.
+More general than `DList`!
+
+~~~~ {.haskell}
+data Tree a = Node (Tree a) a (Tree a)
+            | Tip
+
+newtype Cross a = Cross {
+    runCross :: forall r. (r -> a -> r -> r) -> r -> r
+    }
+
+tip :: Cross a
+tip = Cross $ \_ t -> t
+
+node :: Cross a -> a -> Cross a -> Cross a
+node (Cross l) x (Cross r) = Cross $ \n t -> n (l n t) x (r n t)
+
+convertTree :: Tree a -> Cross a
+convertTree Tip = tip
+convertTree (Node l x r) = node (convertTree l) x (convertTree r)
+
+excommunicateTree :: Cross a -> Tree a
+excommunicateTree (Cross x) = x Node Tip
+~~~~
+
+Only the conversion need know about the ADT!
+
+# A Less Basic Idea
+
+Applies to very pragmatic problems, e.g. you don't have proper ADTs.
+From `#bfpg` on freenode:
 
 > 04:38:09          bkolera | It wouldn't be a big deal if we didn't encode sum types as sub types in scala, but ... >_>
 >
 > 04:42:56          georgew | You could just Church encode?
+
+# (Embedded) Domain-Specific Languages
+
+ * Separate the problem domain from the software engineering
+
+ * More accessible to domain experts than the general-purpose host
+   language (or "metalanguage")
+
+ * Reuse the metalanguage's parser
 
 # The Multiple Interpretations Problem
 
@@ -158,29 +210,23 @@ What are the hard parts of implementing a language?
 
  - parsers
 
- - code generation
+ - code generation/evaluation
 
  - type checkers
 
-# The Static Safety Problem
-
-What are the hard parts of implementing a language?
-
- - parsers
-
- - code generation
-
- - type checkers
-
-Let's reuse!
+Our interpreter should let us reuse all three!
 
 # Solving All The Problems At Once
 
- * Simply typed lambda calculus: tags
+Simply-typed lambda calculus: small but higher-order.
 
- * Simply typed lambda calculus: tagless
+ * ADTs
 
- * Simply typed lambda calculus: the "Finally Tagless" approach
+ * tagless with GADTs
+
+ * final encoding
+
+ * the "Finally Tagless" approach
 
 # A Simple (But Powerful) DSL
 
@@ -294,17 +340,28 @@ failSTLC = SApp (SNum 22) (SNum 33)
 *** Exception: Can't apply the non-function '<22 :: Int>' to argument '<33 :: Int>'!
 ~~~~
 
+# A Less Simple (But Still Powerful) DSL
+
+ - The interpreter is partial!
+
+~~~~ {.haskell}
+failSTLC = SApp (SNum 22) (SNum 33)
+
+> evalSTLC [] failSTLC
+*** Exception: Can't apply the non-function '<22 :: Int>' to argument '<33 :: Int>'!
+~~~~
+
  - Code is more complicated
 
  - We have some runtime overhead due to pattern-matching on the tag
 
 # A Less Simple (But Still Powerful) DSL
 
-Multiple Interpretations        :)
-
-Expression Problem              :(
-
-Static Safety                   :(
+ Property                     Solution
+---------                     ----------
+Multiple Interpretations       :)
+Expression Problem             :(
+Static Safety                  :(
 
 # A Tagless Encoding
 
@@ -403,11 +460,11 @@ twiceY = LamY $ \f -> LamY $ \x -> LamY $ \y -> f `AppY` (f `AppY` x `AppY` y) `
 
 # A Tagless Encoding
 
-Multiple Interpretations        :)
-
-Expression Problem              :(
-
-Static Safety                   :)
+ Property                     Solution
+---------                     ----------
+Multiple Interpretations       :)
+Expression Problem             :(
+Static Safety                  :)
 
 # A Final Encoding
 
@@ -477,11 +534,11 @@ twentytwo = y $ lam $ \x -> const (var 22) x
 
 # A Final Encoding
 
-Multiple Interpretations        :(
-
-Expression Problem              :)
-
-Static Safety                   :)
+ Property                     Solution
+---------                     ----------
+Multiple Interpretations       :(
+Expression Problem             :)
+Static Safety                  :)
 
 # The Finally Tagless Solution
 
@@ -580,6 +637,14 @@ twentytwo = y $ lam $ \x -> const (var 22) x
 "(fixpoint of (lambda x. 22) with respect to 'x')"
 ~~~~
 
+# The Finally Tagless Approach
+
+ Property                     Solution
+---------                     ----------
+Multiple Interpretations       :)
+Expression Problem             :)
+Static Safety                  :)
+
 # Equivalence Of Final and Initial Encodings
 
 ~~~~ {.haskell}
@@ -610,20 +675,12 @@ convert (HApp f x) = app (convert f) (convert x)
 convert (HLam b) = lam $ convert . b . HCell
 ~~~~
 
-# The Finally Tagless Approach
-
-Multiple Interpretations        :)
-
-Expression Problem              :)
-
-Static Safety                   :)
-
 # Drawbacks
 
 There are some disadvantages . . .
 
 ~~~~ {.haskell}
-runAndPrettyPrint prog = (eval' prog, pretty' prog)
+runAndPrettyPrint prog = (eval prog, pretty prog)
 ~~~~
 
 ~~~~ {.haskell}
@@ -637,10 +694,38 @@ FinallyTagless.hs:402:42:
     In the expression: pretty' t
 ~~~~
 
-> polymorphism in Haskell is not first-class -- Oleg
+> Polymorphism in Haskell is not first-class. -- Oleg
 
 When we pattern-match on the program, we constrain it to a single
 type.  Alas!
+
+# Drawbacks
+
+~~~~ {.haskell}
+{-# LANGUAGE RankNTypes #-}
+
+runAndPrettyPrint :: (forall repr. FinalTerm repr => repr t) -> (t, String)
+runAndPrettyPrint prog = (eval prog, pretty prog)
+~~~~
+
+~~~~ {.haskell}
+> runAndPrettyPrint pairs
+(33,"(((lambda x. (lambda y. (lambda z. ((x ((x y) z)) z)))) (lambda x. (lambda y. x)) 33) 22)
+")
+~~~~
+
+~~~~ {.haskell}
+> runAndPrettyPrint twentytwo
+<interactive>:164:20:
+    Could not deduce (FinalTermY repr)
+      arising from a use of ‘twentytwo’ . . .
+~~~~
+
+ Property                     Solution
+---------                     ----------
+Multiple Interpretations       :)
+Expression Problem             :(
+Static Safety                  :)
 
 # Drawbacks
 
@@ -660,7 +745,7 @@ instance (FinalTerm repr, FinalTerm repr') => FinalTerm (Pair repr repr') where
 ~~~~
 
 ~~~~ {.haskell}
-runAndPrettyPrint prog = (eval' $ l prog, pretty' $ r prog)
+runAndPrettyPrint prog = (eval $ l prog, pretty $ r prog)
   where
     l = fst . unPair
     r = snd . unPair
@@ -688,29 +773,35 @@ Here are some advantages of the typeclass method, also known as the
 
 # Other Notes
 
- * I've tried to attack the same three EDSL design problems using some
-   of the "coproducts for free" machinery that Dave has written about.
-   Unfortunately, I'm currently stumped trying to apply it to
-   higher-order languages, and it seems to require an awful lot of
-   machinery.  Maybe Dave can do a follow-up talk explaining how this
-   can be done nicely!
+ * "Coproducts for free": can this initial encoding solve the
+   expression problem?
 
- * It's worth pointing out that Oleg and others have constructed DSLs
-   with linear typing using this approach.  This is noteworthy because
-   linear types are not a strict subset of Haskell's or OCaml's type
-   system.
+ * Finally Tagless can implement linear/affine LC.
 
- * I've used HOAS for all the examples, but the final approach using
-   type classes can be done perfectly fine with de Bruijn indices as
-   well.  You can convert from de Bruijn to HOAS pretty
-   straightforwardly.  I think the other direction is a lot harder, if
-   it's possible.
+ * De Bruijn works too.
 
 # Conclusion
 
-If you haven't seen this material before, I hope this talk has
-introduced a different perspective on programs and domain-specific
-languages.
+[Slides](https://peddie.github.io/encodings/encodings.html) and
+[annotated
+slides](https://peddie.github.io/encodings/encodings-text.html) can be
+found at
+
+    https://peddie.github.io/encodings
+
+Finally Tagless can be found at
+
+    http://okmij.org/ftp/tagless-final/JFP.pdf
+
+The (very helpful) course notes can be found at
+
+    http://okmij.org/ftp/tagless-final/course
+
+Wikipedia has articles on
+
+ * GADTs
+ * Church encodings
+ * Scott encodings
 
 # Backups
 
@@ -795,8 +886,8 @@ dbinitialtest = DBApp (DBLam (DBVar DBZ)) (DBConst 22)
 For this final trick, I don't think there's a way to get away without
 either multi-parameter type classes with functional dependencies or
 type families.  Our environment needs to have the same tuple
-structure, but all the types need to change from e.g. 'a' to 'repr a'
-(though the empty environment is still simply '()').  We don't have a
+structure, but all the types need to change from e.g. `a` to `repr a`
+(though the empty environment is still simply `()`).  We don't have a
 general way to express this with Haskell 98.  Type families (or MPTCs
 + fundeps) let us write type-level functions to explain to the type
 checker the appropriate relationships between the types in the
@@ -804,7 +895,7 @@ environment.
 
 Note that the conversion remains open!  We could add new De
 Bruijn-based classes and new HOAS-based counterparts in a new module,
-along with the translation instances, and reuse this original 'toHOAS'
+along with the translation instances, and reuse this original `toHOAS`
 function!
 
 ~~~~ {.haskell}
@@ -830,8 +921,6 @@ instance FinalTermArith repr => FinalDBTermArith (WrapHOAS repr) where
 toHOAS :: WrapHOAS repr () a -> repr a
 toHOAS expr = unwrapHOAS expr ()
 ~~~~
-
-# Church Encodings
 
 # Scott Encodings
 
@@ -871,9 +960,3 @@ If we used the ImpredicativeTypes extension, which lets us write
 things like this, we could solve the problem.  Sadly, GHC would no
 longer be able to infer types for such values.  That's a heavy price
 to pay!
-
-# Codensity Transformation
-
-# Optimization example?
-
-# TDPE?
