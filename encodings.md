@@ -357,7 +357,7 @@ failSTLC = SApp (SNum 22) (SNum 33)
 
 # A Less Simple (But Still Powerful) DSL
 
- Property                     Solution
+ Property                     ADTs
 ---------                     ----------
 Multiple Interpretations       :)
 Expression Problem             :(
@@ -460,11 +460,11 @@ twiceY = LamY $ \f -> LamY $ \x -> LamY $ \y -> f `AppY` (f `AppY` x `AppY` y) `
 
 # A Tagless Encoding
 
- Property                     Solution
----------                     ----------
-Multiple Interpretations       :)
-Expression Problem             :(
-Static Safety                  :)
+ Property                     ADTs        GADTs
+---------                     ----------  --------
+Multiple Interpretations       :)          :)
+Expression Problem             :(          :(
+Static Safety                  :(          :)
 
 # A Final Encoding
 
@@ -534,11 +534,11 @@ twentytwo = y $ lam $ \x -> const (var 22) x
 
 # A Final Encoding
 
- Property                     Solution
----------                     ----------
-Multiple Interpretations       :(
-Expression Problem             :)
-Static Safety                  :)
+ Property                     ADTs        GADTs     Functions
+---------                     ----------  --------  ----------
+Multiple Interpretations       :)          :)        :(
+Expression Problem             :(          :(        :)
+Static Safety                  :(          :)        :)
 
 # The Finally Tagless Solution
 
@@ -639,11 +639,11 @@ twentytwo = y $ lam $ \x -> const (var 22) x
 
 # The Finally Tagless Approach
 
- Property                     Solution
----------                     ----------
-Multiple Interpretations       :)
-Expression Problem             :)
-Static Safety                  :)
+ Property                     ADTs        GADTs     Functions    Type Classes
+---------                     ----------  --------  ----------   -------------
+Multiple Interpretations       :)          :)        :(           :)
+Expression Problem             :(          :(        :)           :)
+Static Safety                  :(          :)        :)           :)
 
 # Equivalence Of Final and Initial Encodings
 
@@ -721,11 +721,12 @@ runAndPrettyPrint prog = (eval prog, pretty prog)
       arising from a use of ‘twentytwo’ . . .
 ~~~~
 
- Property                     Solution
----------                     ----------
-Multiple Interpretations       :)
-Expression Problem             :(
-Static Safety                  :)
+ Property                     Type Classes  RankNTypes
+---------                     ------------- -------------
+Multiple Interpretations       :)            :)
+Expression Problem             :)            :(
+Static Safety                  :)            :)
+Simultaneous interpretations   :(            :)
 
 # Drawbacks
 
@@ -750,6 +751,13 @@ runAndPrettyPrint prog = (eval $ l prog, pretty $ r prog)
     l = fst . unPair
     r = snd . unPair
 ~~~~
+
+ Property                     Type Classes  RankNTypes   Pair instance
+---------                     ------------- -----------  -------------
+Multiple Interpretations       :)            :)           :)
+Expression Problem             :)            :(           :)
+Static Safety                  :)            :)           :)
+Simultaneous interpretations   :(            :)           :)
 
 # Initial Advantages
 
