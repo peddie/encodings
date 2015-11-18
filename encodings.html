@@ -64,7 +64,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </div>
 <div id="the-basic-idea" class="slide section level1">
 <h1>The Basic Idea</h1>
-<p>Consider the humble linked list.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">List</span> a <span class="fu">=</span> <span class="dt">Nil</span>
             <span class="fu">|</span> <span class="dt">Cons</span> a (<span class="dt">List</span> a)
 
@@ -76,12 +75,15 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </div>
 <div id="the-basic-idea-1" class="slide section level1">
 <h1>The Basic Idea</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">List</span> a <span class="fu">=</span> <span class="dt">Nil</span>
+            <span class="fu">|</span> <span class="dt">Cons</span> a (<span class="dt">List</span> a)
+
+<span class="co">-- data [a] = [] | a : [a]</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(++) ::</span> [a] <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]
 []     <span class="fu">++</span> bs <span class="fu">=</span> bs
 (a<span class="fu">:</span>as) <span class="fu">++</span> bs <span class="fu">=</span> a <span class="fu">:</span> (as <span class="fu">++</span> bs)
 
 <span class="co">-- call `:` once per element of the first list, every time you call `++`!</span></code></pre></div>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">a <span class="fu">++</span> b <span class="fu">++</span> c         <span class="co">-- traverses `a` twice, `b` once</span></code></pre></div>
 </div>
 <div id="the-basic-idea-2" class="slide section level1">
 <h1>The Basic Idea</h1>
@@ -384,6 +386,9 @@ eval (<span class="dt">Var</span> x) <span class="fu">=</span> x
 eval (<span class="dt">Const</span> x) <span class="fu">=</span> x
 eval (<span class="dt">App</span> f x) <span class="fu">=</span> eval f (eval x)
 eval (<span class="dt">Lam</span> f) <span class="fu">=</span> eval <span class="fu">.</span> f <span class="fu">.</span> <span class="dt">Var</span></code></pre></div>
+</div>
+<div id="a-tagless-encoding-1" class="slide section level1">
+<h1>A Tagless Encoding</h1>
 <p>Let's try some test programs.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">first <span class="fu">=</span> <span class="dt">Lam</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> <span class="dt">Lam</span> <span class="fu">$</span> \y <span class="ot">-&gt;</span> x
 
@@ -396,7 +401,7 @@ pairs <span class="fu">=</span> twice <span class="ot">`App`</span> first <span 
 <span class="fu">&gt;</span> <span class="fu">:</span>t pairs
 <span class="ot">pairs ::</span> (<span class="dt">Num</span> a, <span class="dt">Show</span> a) <span class="ot">=&gt;</span> <span class="dt">Term</span> a</code></pre></div>
 </div>
-<div id="a-tagless-encoding-1" class="slide section level1">
+<div id="a-tagless-encoding-2" class="slide section level1">
 <h1>A Tagless Encoding</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">failure <span class="fu">=</span> twice <span class="ot">`App`</span> (<span class="dt">Const</span> <span class="dv">33</span>) <span class="ot">`App`</span> (<span class="dt">Const</span> <span class="dv">22</span>) <span class="ot">`App`</span> first</code></pre></div>
 <pre class="text"><code>FinallyTagless.hs:210:1:
@@ -418,7 +423,7 @@ pairs <span class="fu">=</span> twice <span class="ot">`App`</span> first <span 
                  Term a
     Probable cause: the inferred type is ambiguous</code></pre>
 </div>
-<div id="a-tagless-encoding-2" class="slide section level1">
+<div id="a-tagless-encoding-3" class="slide section level1">
 <h1>A Tagless Encoding</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">
 <span class="co">-- Users want Turing-completeness.  Management has demanded we add a</span>
@@ -442,7 +447,7 @@ evalY (<span class="dt">Y</span> f) <span class="fu">=</span> y&#39; <span class
 
 twiceY <span class="fu">=</span> <span class="dt">LamY</span> <span class="fu">$</span> \f <span class="ot">-&gt;</span> <span class="dt">LamY</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> <span class="dt">LamY</span> <span class="fu">$</span> \y <span class="ot">-&gt;</span> f <span class="ot">`AppY`</span> (f <span class="ot">`AppY`</span> x <span class="ot">`AppY`</span> y) <span class="ot">`AppY`</span> y</code></pre></div>
 </div>
-<div id="a-tagless-encoding-3" class="slide section level1">
+<div id="a-tagless-encoding-4" class="slide section level1">
 <h1>A Tagless Encoding</h1>
 <table>
 <thead>
@@ -483,6 +488,9 @@ app (<span class="dt">Eval</span> f) (<span class="dt">Eval</span> x) <span clas
 
 <span class="ot">lam ::</span> (<span class="dt">Eval</span> a <span class="ot">-&gt;</span> <span class="dt">Eval</span> b) <span class="ot">-&gt;</span> <span class="dt">Eval</span> (a <span class="ot">-&gt;</span> b)
 lam b <span class="fu">=</span> <span class="dt">Eval</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> eval (b (<span class="dt">Eval</span> x))</code></pre></div>
+</div>
+<div id="a-final-encoding-1" class="slide section level1">
+<h1>A Final Encoding</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- first = Lam $ \x -&gt; Lam $ \y -&gt; x</span>
 first <span class="fu">=</span> lam <span class="fu">$</span> \x <span class="ot">-&gt;</span> lam <span class="fu">$</span> \y <span class="ot">-&gt;</span> x
 
@@ -498,7 +506,7 @@ pairs <span class="fu">=</span> twice <span class="ot">`app`</span> first <span 
 <span class="fu">&gt;</span> eval pairs
 <span class="dv">33</span></code></pre></div>
 </div>
-<div id="a-final-encoding-1" class="slide section level1">
+<div id="a-final-encoding-2" class="slide section level1">
 <h1>A Final Encoding</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">failure <span class="fu">=</span> twice <span class="ot">`app`</span> (var <span class="dv">33</span>) <span class="ot">`app`</span> (var <span class="dv">22</span>) <span class="ot">`app`</span> first
 
@@ -512,7 +520,7 @@ FinallyTagless.hs<span class="fu">:</span><span class="dv">72</span><span class=
                   <span class="dt">Show</span> (a <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> a1 <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> a)) <span class="ot">=&gt;</span>
                  <span class="dt">Eval</span> a</code></pre></div>
 </div>
-<div id="a-final-encoding-2" class="slide section level1">
+<div id="a-final-encoding-3" class="slide section level1">
 <h1>A Final Encoding</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span>Final.hs (<span class="dt">Eval</span>(..), lam, app, var)
 
@@ -525,7 +533,7 @@ twentytwo <span class="fu">=</span> y <span class="fu">$</span> lam <span class=
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> eval <span class="fu">$</span> twentytwo
 <span class="dv">22</span></code></pre></div>
 </div>
-<div id="a-final-encoding-3" class="slide section level1">
+<div id="a-final-encoding-4" class="slide section level1">
 <h1>A Final Encoding</h1>
 <table>
 <thead>
@@ -571,6 +579,9 @@ twentytwo <span class="fu">=</span> y <span class="fu">$</span> lam <span class=
   var x <span class="fu">=</span> <span class="dt">Eval</span> x
   app (<span class="dt">Eval</span> f) (<span class="dt">Eval</span> x) <span class="fu">=</span> <span class="dt">Eval</span> <span class="fu">$</span> f x
   lam b <span class="fu">=</span> <span class="dt">Eval</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> eval&#39; (b (<span class="dt">Eval</span> x))</code></pre></div>
+</div>
+<div id="the-finally-tagless-solution-1" class="slide section level1">
+<h1>The Finally Tagless Solution</h1>
 <p>Our test programs are unchanged.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">first <span class="fu">=</span> lam <span class="fu">$</span> \x <span class="ot">-&gt;</span> lam <span class="fu">$</span> \y <span class="ot">-&gt;</span> x
 
@@ -584,7 +595,7 @@ pairs <span class="fu">=</span> twice <span class="ot">`app`</span> first <span 
 <span class="fu">&gt;</span> eval pairs
 <span class="dv">33</span></code></pre></div>
 </div>
-<div id="the-finally-tagless-solution-1" class="slide section level1">
+<div id="the-finally-tagless-solution-2" class="slide section level1">
 <h1>The Finally Tagless Solution</h1>
 <p>Let's make a second interpreter.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- This is just machinery for generating variable names</span>
@@ -610,7 +621,7 @@ pretty expr <span class="fu">=</span> unPretty expr varnames</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> pretty&#39; pairs
 <span class="st">&quot;(((lambda x. (lambda y. (lambda z. ((x ((x y) z)) z)))) (lambda x. (lambda y. x)) 33) 22)&quot;</span></code></pre></div>
 </div>
-<div id="the-finally-tagless-solution-2" class="slide section level1">
+<div id="the-finally-tagless-solution-3" class="slide section level1">
 <h1>The Finally Tagless Solution</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span>FinallyTagless.hs (<span class="dt">FinalTerm</span>(..), <span class="dt">Eval</span>(..), <span class="dt">Pretty</span>(..), pretty)
 
@@ -724,6 +735,16 @@ runAndPrettyPrint prog <span class="fu">=</span> (eval prog, pretty prog)</code>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> runAndPrettyPrint pairs
 (<span class="dv">33</span>,<span class="st">&quot;(((lambda x. (lambda y. (lambda z. ((x ((x y) z)) z)))) (lambda x. (lambda y. x)) 33) 22)</span>
 <span class="st">&quot;</span>)</code></pre></div>
+</div>
+<div id="drawbacks-2" class="slide section level1">
+<h1>Drawbacks</h1>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RankNTypes #-}</span>
+
+<span class="ot">runAndPrettyPrint ::</span> (forall repr<span class="fu">.</span> <span class="dt">FinalTerm</span> repr <span class="ot">=&gt;</span> repr t) <span class="ot">-&gt;</span> (t, <span class="dt">String</span>)
+runAndPrettyPrint prog <span class="fu">=</span> (eval prog, pretty prog)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> runAndPrettyPrint pairs
+(<span class="dv">33</span>,<span class="st">&quot;(((lambda x. (lambda y. (lambda z. ((x ((x y) z)) z)))) (lambda x. (lambda y. x)) 33) 22)</span>
+<span class="st">&quot;</span>)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> runAndPrettyPrint twentytwo
 <span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">164</span><span class="fu">:</span><span class="dv">20</span><span class="fu">:</span>
     <span class="dt">Could</span> not deduce (<span class="dt">FinalTermY</span> repr)
@@ -760,7 +781,7 @@ runAndPrettyPrint prog <span class="fu">=</span> (eval prog, pretty prog)</code>
 </tbody>
 </table>
 </div>
-<div id="drawbacks-2" class="slide section level1">
+<div id="drawbacks-3" class="slide section level1">
 <h1>Drawbacks</h1>
 <p>The only thing we can do with a finally-encoded term is to interpret it.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Pair</span> repr repr&#39; t <span class="fu">=</span> <span class="dt">Pair</span> {<span class="ot"> unPair ::</span> (repr t, repr&#39; t) }
@@ -968,7 +989,7 @@ scons x xs <span class="fu">=</span> <span class="dt">SL</span> <span class="fu"
 <span class="ot">smap ::</span> forall a b<span class="fu">.</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">SList</span> a <span class="ot">-&gt;</span> <span class="dt">SList</span> b
 smap f lst <span class="fu">=</span> elim lst (\x xs <span class="ot">-&gt;</span> f x <span class="ot">`scons`</span> smap f xs) snil</code></pre></div>
 </div>
-<div id="drawbacks-3" class="slide section level1">
+<div id="drawbacks-4" class="slide section level1">
 <h1>Drawbacks</h1>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RankNTypes #-}</span>
 <span class="ot">{-# LANGUAGE ImpredicativeTypes #-}</span>
