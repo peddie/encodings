@@ -9,8 +9,6 @@ practical improvements.
 
 # The Basic Idea
 
-Consider the humble linked list.
-
 ~~~~ {.haskell}
 data List a = Nil
             | Cons a (List a)
@@ -24,15 +22,18 @@ data List a = Nil
 # The Basic Idea
 
 ~~~~ {.haskell}
+data List a = Nil
+            | Cons a (List a)
+
+-- data [a] = [] | a : [a]
+~~~~
+
+~~~~ {.haskell}
 (++) :: [a] -> [a] -> [a]
 []     ++ bs = bs
 (a:as) ++ bs = a : (as ++ bs)
 
 -- call `:` once per element of the first list, every time you call `++`!
-~~~~
-
-~~~~ {.haskell}
-a ++ b ++ c         -- traverses `a` twice, `b` once
 ~~~~
 
 # The Basic Idea
@@ -387,6 +388,8 @@ eval (App f x) = eval f (eval x)
 eval (Lam f) = eval . f . Var
 ~~~~
 
+# A Tagless Encoding
+
 Let's try some test programs.
 
 ~~~~ {.haskell}
@@ -481,6 +484,8 @@ lam :: (Eval a -> Eval b) -> Eval (a -> b)
 lam b = Eval $ \x -> eval (b (Eval x))
 ~~~~
 
+# A Final Encoding
+
 ~~~~ {.haskell}
 -- first = Lam $ \x -> Lam $ \y -> x
 first = lam $ \x -> lam $ \y -> x
@@ -559,6 +564,8 @@ instance FinalTerm Eval where
   app (Eval f) (Eval x) = Eval $ f x
   lam b = Eval $ \x -> eval' (b (Eval x))
 ~~~~
+
+# The Finally Tagless Solution
 
 Our test programs are unchanged.
 
@@ -698,6 +705,21 @@ FinallyTagless.hs:402:42:
 
 When we pattern-match on the program, we constrain it to a single
 type.  Alas!
+
+# Drawbacks
+
+~~~~ {.haskell}
+{-# LANGUAGE RankNTypes #-}
+
+runAndPrettyPrint :: (forall repr. FinalTerm repr => repr t) -> (t, String)
+runAndPrettyPrint prog = (eval prog, pretty prog)
+~~~~
+
+~~~~ {.haskell}
+> runAndPrettyPrint pairs
+(33,"(((lambda x. (lambda y. (lambda z. ((x ((x y) z)) z)))) (lambda x. (lambda y. x)) 33) 22)
+")
+~~~~
 
 # Drawbacks
 
