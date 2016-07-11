@@ -246,7 +246,7 @@ data Var = VZero | VSucc Var deriving Show
 
 -- We need a way to look up variables in our environment.
 lkup :: Var -> [x] -> x
-lkup VZero [x] = x
+lkup VZero (x:_) = x
 lkup (VSucc v) (_:moar) = lkup v moar
 lkup _ _ = error "sorry, dawg; I can't interpret an open term!"
 ~~~~
